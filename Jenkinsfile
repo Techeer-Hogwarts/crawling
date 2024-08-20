@@ -18,9 +18,13 @@ pipeline {
         stage('Test') {
             steps {
                 script {
+                    // Step 0: Check Go installation
+                    echo 'Checking Go installation...'
+                    sh 'go version'
                     // Step 1: Run Go linting
                     echo 'Running Go linting...'
-                    sh 'golangci-lint run'
+                    sh 'go clean -modcache'
+                    sh 'golangci-lint run --timeout 5m --verbose'
 
                     // Step 2: Run Go unit tests
                     echo 'Running Go unit tests...'
