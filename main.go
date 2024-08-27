@@ -10,6 +10,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+// Redis client
 var rdb *redis.Client
 var ctx = context.Background()
 
@@ -62,26 +63,29 @@ func main() {
 
 	// Process each message
 	for msg := range msgs {
-		taskID := string(msg.MessageId)
-		taskBody := string(msg.Body)
-		fmt.Printf("Received task: %s with task ID: %s\n", taskBody, taskID)
+		taskID := msg.MessageId
+		messageContent := string(msg.Body) + " - from Redis"
+		fmt.Printf("Received task: %s\n", taskID)
 
 		// Simulate task processing and generate a result
-		result := fmt.Sprintf("Processed: %s", taskID)
+		result := fmt.Sprintf("%s 테스크가 성공적으로 처리 됨. 내용은 -> %s", taskID, messageContent)
 
 		// Simulate processing time
 		time.Sleep(5 * time.Second)
 
-		// Store the result in Redis and update status to "completed"
-		err := rdb.Set(ctx, taskID+":result", result, 0).Err()
+		// Store the result and update status in Redis hash
+		err := rdb.HSet(ctx, taskID, map[string]interface{}{
+			"result":    result,
+			"processed": "true",
+		}).Err()
 		if err != nil {
 			log.Fatalf("Failed to store result in Redis: %v", err)
 		}
 
-		// Update the task status to "completed"
-		err = rdb.Set(ctx, taskID, "completed", 0).Err()
+		// Notify completion
+		err = rdb.Publish(ctx, "task_completions", taskID).Err()
 		if err != nil {
-			log.Fatalf("Failed to update task status in Redis: %v", err)
+			log.Fatalf("Failed to publish completion message to Redis: %v", err)
 		}
 
 		fmt.Printf("Task '%s' completed and stored in Redis\n", taskID)
