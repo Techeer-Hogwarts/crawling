@@ -2,92 +2,82 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 	"log"
+	"sync"
 	"time"
 
+	"github.com/Techeer-Hogwarts/crawling/cmd"
+	"github.com/Techeer-Hogwarts/crawling/cmd/rabbitmq"
+	"github.com/Techeer-Hogwarts/crawling/cmd/redisInteractor"
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
 )
 
-// Redis client
-var rdb *redis.Client
-var ctx = context.Background()
-
 func main() {
-	// Initialize Redis client
-	rdb = redis.NewClient(&redis.Options{
-		Addr: "hogwartsredis:6379", // Redis address
-		DB:   0,                    // use default DB
-	})
-
-	// Connect to RabbitMQ
-	conn, err := amqp091.Dial("amqp://guest:guest@hogwartsmq:5672/")
+	newConnection := rabbitmq.NewConnection()
+	defer newConnection.Close()
+	newRedisClient, err := redisInteractor.NewClient()
 	if err != nil {
-		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
+		log.Fatalf("Failed to create a new Redis client: %v", err)
 	}
-	defer conn.Close()
+	redisContext := context.Background()
+	newChannel := rabbitmq.NewChannel(newConnection)
+	defer newChannel.Close()
+	queue1 := rabbitmq.DeclareQueue(newChannel, "crawl_queue")
+	consumedMessages := rabbitmq.ConsumeMessages(newChannel, queue1.Name)
 
-	ch, err := conn.Channel()
+	const numWorkers = 5 // Number of concurrent workers
+	var wg sync.WaitGroup
+	wg.Add(numWorkers) // Add the number of workers to the WaitGroup
+
+	for i := 0; i < numWorkers; i++ {
+		log.Printf("Starting worker %d", i)
+		go func(workerID int) { // Each worker is a goroutine
+			defer wg.Done()
+			for msg := range consumedMessages { // Continuously process messages
+				log.Printf("Worker %d processing message: %s", workerID, msg.Body)
+				processMessage(msg, redisContext, newRedisClient)
+			}
+		}(i)
+	}
+	wg.Wait()
+}
+
+func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedisClient *redis.Client) {
+	var blogRequest cmd.BlogRequest
+	err := json.Unmarshal(msg.Body, &blogRequest)
 	if err != nil {
-		log.Fatalf("Failed to open a channel: %v", err)
+		log.Printf("Failed to unmarshal message: %v", err)
+		return
 	}
-	defer ch.Close()
 
-	// Declare a queue to receive messages
-	q, err := ch.QueueDeclare(
-		"crawl_queue", // queue name
-		true,          // durable
-		false,         // delete when unused
-		false,         // exclusive
-		false,         // no-wait
-		nil,           // arguments
-	)
+	url, err := cmd.ValidateAndSanitizeURL(string(blogRequest.Data))
 	if err != nil {
-		log.Fatalf("Failed to declare a queue: %v", err)
+		log.Printf("Invalid or unsafe URL: %v", err)
+		return
 	}
+	log.Printf("Processing URL: %v", url)
 
-	// Consume messages from the queue
-	msgs, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		true,   // auto-ack
-		false,  // exclusive
-		false,  // no-local
-		false,  // no-wait
-		nil,    // args
-	)
+	blogPosts, err := cmd.CrawlBlog(url)
 	if err != nil {
-		log.Fatalf("Failed to register a consumer: %v", err)
+		log.Printf("Failed to crawl blog: %v", err)
+		return
 	}
 
-	// Process each message
-	for msg := range msgs {
-		taskID := msg.MessageId
-		messageContent := string(msg.Body) + " - from Redis"
-		fmt.Printf("Received task: %s\n", taskID)
+	// blogPosts.UserID = blogRequest.UserID
 
-		// Simulate task processing and generate a result
-		result := fmt.Sprintf("%s 테스크가 성공적으로 처리 됨. 내용은 -> %s", taskID, messageContent)
-
-		// Simulate processing time
-		time.Sleep(5 * time.Second)
-
-		// Store the result and update status in Redis hash
-		err := rdb.HSet(ctx, taskID, map[string]interface{}{
-			"result":    result,
-			"processed": "true",
-		}).Err()
-		if err != nil {
-			log.Fatalf("Failed to store result in Redis: %v", err)
-		}
-
-		// Notify completion
-		err = rdb.Publish(ctx, "task_completions", taskID).Err()
-		if err != nil {
-			log.Fatalf("Failed to publish completion message to Redis: %v", err)
-		}
-
-		fmt.Printf("Task '%s' completed and stored in Redis\n", taskID)
+	err = redisInteractor.SetData(redisContext, newRedisClient, msg.MessageId, blogPosts)
+	if err != nil {
+		log.Printf("Failed to set data: %v", err)
+		return
 	}
+
+	err = redisInteractor.NotifyCompletion(redisContext, newRedisClient, msg.MessageId)
+	if err != nil {
+		log.Printf("Failed to notify completion: %v", err)
+		return
+	}
+
+	log.Printf("Successfully processed and stored blog data. Time: %v", time.Now())
 }
