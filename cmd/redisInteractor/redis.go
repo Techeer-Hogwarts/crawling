@@ -22,6 +22,10 @@ func NewClient() (*redis.Client, error) {
 
 func SetData(ctx context.Context, rdb *redis.Client, key string, value cmd.BlogResponse) error {
 	jsonValue, err := json.Marshal(value)
+	if err != nil {
+		log.Printf("Failed to marshal data: %v", err)
+		return err
+	}
 	err = rdb.HSet(ctx, key, map[string]interface{}{
 		"result":    string(jsonValue),
 		"processed": "true",
