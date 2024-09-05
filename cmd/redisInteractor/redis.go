@@ -14,8 +14,8 @@ import (
 func NewClient() (*redis.Client, error) {
 	host := config.GetEnv("REDIS_HOST", "localhost")
 	rdb := redis.NewClient(&redis.Options{
-		Addr: fmt.Sprintf("%s:6379", host), // Redis address
-		DB:   0,                            // use default DB
+		Addr: fmt.Sprintf("%s:6379", host),
+		DB:   0,
 	})
 	return rdb, nil
 }
