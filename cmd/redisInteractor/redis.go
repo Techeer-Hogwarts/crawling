@@ -14,14 +14,18 @@ import (
 func NewClient() (*redis.Client, error) {
 	host := config.GetEnv("REDIS_HOST", "localhost")
 	rdb := redis.NewClient(&redis.Options{
-		Addr: fmt.Sprintf("%s:6379", host), // Redis address
-		DB:   0,                            // use default DB
+		Addr: fmt.Sprintf("%s:6379", host),
+		DB:   0,
 	})
 	return rdb, nil
 }
 
 func SetData(ctx context.Context, rdb *redis.Client, key string, value cmd.BlogResponse) error {
 	jsonValue, err := json.Marshal(value)
+	if err != nil {
+		log.Printf("Failed to marshal data: %v", err)
+		return err
+	}
 	err = rdb.HSet(ctx, key, map[string]interface{}{
 		"result":    string(jsonValue),
 		"processed": "true",
