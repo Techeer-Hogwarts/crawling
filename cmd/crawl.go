@@ -80,7 +80,7 @@ func CrawlBlog(targetURL string) (BlogResponse, error) {
 		chromedp.WaitReady("body"),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 	var prevHeight, currHeight int
 	for i := 0; i < 4; i++ { // 최대 40 언저리
@@ -88,7 +88,7 @@ func CrawlBlog(targetURL string) (BlogResponse, error) {
 			chromedp.Evaluate(`document.body.scrollHeight`, &prevHeight),
 		)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 			return BlogResponse{}, err
 		}
 
@@ -97,7 +97,7 @@ func CrawlBlog(targetURL string) (BlogResponse, error) {
 			chromedp.Sleep(2*time.Second),
 		)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 			return BlogResponse{}, err
 		}
 
@@ -105,7 +105,7 @@ func CrawlBlog(targetURL string) (BlogResponse, error) {
 			chromedp.Evaluate(`document.body.scrollHeight`, &currHeight),
 		)
 		if err != nil {
-			log.Fatal(err)
+			log.Println(err)
 			return BlogResponse{}, err
 		}
 
@@ -156,7 +156,7 @@ func CrawlBlog(targetURL string) (BlogResponse, error) {
 		`, &divContents),
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
 	}
 
 	var blogPosts []BlogPosts
