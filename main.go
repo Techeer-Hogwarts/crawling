@@ -52,14 +52,14 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 		return
 	}
 
-	url, err := cmd.ValidateAndSanitizeURL(string(blogRequest.Data))
+	url, host, err := cmd.ValidateAndSanitizeURL(string(blogRequest.Data))
 	if err != nil {
 		log.Printf("Invalid or unsafe URL: %v", err)
 		return
 	}
 	log.Printf("Processing URL: %v", url)
 
-	blogPosts, err := cmd.CrawlBlog(url)
+	blogPosts, err := cmd.CrawlBlog(url, host)
 	if err != nil {
 		log.Printf("Failed to crawl blog: %v", err)
 		return

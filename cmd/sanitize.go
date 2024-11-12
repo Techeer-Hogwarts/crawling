@@ -6,28 +6,29 @@ import (
 )
 
 var allowedDomains = map[string]struct{}{
-	"velog.io":   {},
-	"medium.com": {},
+	"velog.io":    {},
+	"medium.com":  {},
+	"tistory.com": {},
 }
 
-func IsAllowedDomain(host string) bool {
+func IsAllowedDomain(host string) (bool, string) {
 	_, allowed := allowedDomains[host]
-	return allowed
+	return allowed, host
 }
 
-func ValidateAndSanitizeURL(rawURL string) (string, error) {
+func ValidateAndSanitizeURL(rawURL string) (string, string, error) {
 	parsedURL, err := url.Parse(rawURL)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-		return "", fmt.Errorf("invalid URL scheme: %s", parsedURL.Scheme)
+		return "", "", fmt.Errorf("invalid URL scheme: %s", parsedURL.Scheme)
 	}
-
-	if !IsAllowedDomain(parsedURL.Host) {
-		return "", fmt.Errorf("domain not allowed: %s", parsedURL.Host)
+	allowed, host := IsAllowedDomain(parsedURL.Host)
+	if !allowed {
+		return "", "", fmt.Errorf("domain not allowed: %s", parsedURL.Host)
 	}
 	parsedURL.RawQuery = ""
 
-	return parsedURL.String(), nil
+	return parsedURL.String(), host, nil
 }
