@@ -46,6 +46,7 @@ func main() {
 
 func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedisClient *redis.Client) {
 	var blogRequest cmd.BlogRequest
+	log.Printf("Processing message: %s", msg.Body)
 	err := json.Unmarshal(msg.Body, &blogRequest)
 	if err != nil {
 		log.Printf("Failed to unmarshal message: %v", err)

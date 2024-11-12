@@ -1,19 +1,19 @@
 version: '3.7'
 
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    restart: always
-    environment:
-      - REDIS_HOST=hogwartsredis
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASS=guest
-      - RABBITMQ_HOST=hogwartsmq
-    tty: true
+  # web:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #   restart: always
+  #   environment:
+  #     - REDIS_HOST=hogwartsredis
+  #     - RABBITMQ_USER=guest
+  #     - RABBITMQ_PASS=guest
+  #     - RABBITMQ_HOST=hogwartsmq
+  #   tty: true
   
   hogwartsmq:
     image: "rabbitmq:3-management"

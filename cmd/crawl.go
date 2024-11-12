@@ -56,7 +56,7 @@ type BlogResponse struct {
 
 type BlogRequest struct {
 	Type string `json:"type"`
-	Data []byte `json:"data"`
+	Data string `json:"data"`
 }
 
 func CrawlBlog(targetURL, host string) (BlogResponse, error) {
