@@ -48,11 +48,13 @@ payload = {
 }
 
 # Send the request to the GraphQL API
-response = requests.post(url, json=payload)
+headers = {"Accept-Language": "en-US,en;q=0.55", "Cache-Control": "no-cache, max-age=0", 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+response = requests.post(url, json=payload, headers=headers)
 
 # Check if the request was successful
 if response.status_code == 200:
     # Print the response JSON
+    response.text.encode('utf-8').decode('latin-1')
     data = response.json()
     data = json.dumps(data, indent=2)
     print(data)

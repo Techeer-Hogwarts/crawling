@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Techeer-Hogwarts/crawling/cmd"
+	"github.com/Techeer-Hogwarts/crawling/cmd/blogs"
 	"github.com/Techeer-Hogwarts/crawling/config"
 	"github.com/redis/go-redis/v9"
 )
@@ -20,7 +20,7 @@ func NewClient() (*redis.Client, error) {
 	return rdb, nil
 }
 
-func SetData(ctx context.Context, rdb *redis.Client, key string, value cmd.BlogResponse) error {
+func SetData(ctx context.Context, rdb *redis.Client, key string, value blogs.BlogResponse) error {
 	jsonValue, err := json.Marshal(value)
 	if err != nil {
 		log.Printf("Failed to marshal data: %v", err)
@@ -34,6 +34,7 @@ func SetData(ctx context.Context, rdb *redis.Client, key string, value cmd.BlogR
 		log.Printf("Failed to set data: %v", err)
 		return err
 	}
+	log.Printf("Successfully set data for key: %s", key)
 	return nil
 }
 

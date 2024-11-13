@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/Techeer-Hogwarts/crawling/cmd/rabbitmq"
 	"github.com/Techeer-Hogwarts/crawling/cmd/redisInteractor"
@@ -39,6 +41,7 @@ func main() {
 	// Declare a queue in RabbitMQ
 	queue := rabbitmq.DeclareQueue(rabbitChan, "crawl_queue")
 
+	// Handle HTTP requests
 	http.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Only POST requests are allowed", http.StatusMethodNotAllowed)
@@ -61,17 +64,21 @@ func main() {
 			return
 		}
 
-		// Publish message to RabbitMQ
-		err = PublishMessage(rabbitChan, queue.Name, messageBytes)
-		if err != nil {
-			http.Error(w, "Failed to send message", http.StatusInternalServerError)
-			log.Printf("Failed to publish message to RabbitMQ: %v", err)
-			return
-		}
-
-		log.Printf("Message sent to RabbitMQ: %s", string(messageBytes))
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("Message sent successfully"))
+		// Send the response to Postman immediately (HTTP 202 Accepted)
+		w.WriteHeader(http.StatusAccepted) // HTTP 202 Accepted
+		w.Write([]byte("Task is being processed"))
+		log.Printf("Received message: %s", string(messageBytes))
+		// Publish message to RabbitMQ in a separate goroutine (async)
+		go func() {
+			log.Printf("이거 왜 안됨?")
+			err := PublishMessage(rabbitChan, queue.Name, messageBytes)
+			if err != nil {
+				log.Printf("Failed to publish message to RabbitMQ: %v", err)
+			} else {
+				log.Printf("Message sent to RabbitMQ: %s", string(messageBytes))
+			}
+		}()
+		log.Printf("Response sent to client")
 	})
 
 	// Start the HTTP server
@@ -82,18 +89,19 @@ func main() {
 // PublishMessage sends a message to the specified queue using RabbitMQ's default exchange.
 func PublishMessage(ch *amqp091.Channel, queueName string, message []byte) error {
 	// Put the channel in confirm mode to ensure that all publishings are acknowledged
+	log.Printf("Its hit")
 	if err := ch.Confirm(false); err != nil {
 		log.Printf("Channel could not be put into confirm mode: %v", err)
 		return err
 	}
 
 	// Create a notification listener for undeliverable messages
-	returns := ch.NotifyReturn(make(chan amqp091.Return))
-	go func() {
-		for ret := range returns {
-			log.Printf("Message returned: %s", string(ret.Body))
-		}
-	}()
+	// returns := ch.NotifyReturn(make(chan amqp091.Return))
+	// go func() {
+	// 	for ret := range returns {
+	// 		log.Printf("Message returned: %s", string(ret.Body))
+	// 	}
+	// }()
 
 	err := ch.Publish(
 		"",        // exchange - default exchange
@@ -103,24 +111,26 @@ func PublishMessage(ch *amqp091.Channel, queueName string, message []byte) error
 		amqp091.Publishing{
 			ContentType: "plain/text", // Using plain text for message content
 			Body:        message,      // Using byte array for JSON-encoded message
+			MessageId:   fmt.Sprintf("task-%d", time.Now().Unix()),
 		},
 	)
 	if err != nil {
 		log.Printf("Failed to publish message: %v", err)
 		return err
 	}
-
+	log.Print("here?")
 	// Wait for confirmation of the published message
-	confirms := ch.NotifyPublish(make(chan amqp091.Confirmation))
-	for confirm := range confirms {
-		if confirm.Ack {
-			log.Printf("Message delivery confirmed (ack): %d", confirm.DeliveryTag)
-			break
-		} else {
-			log.Printf("Message delivery not confirmed (nack): %d", confirm.DeliveryTag)
-			break
-		}
-	}
-
+	// confirms := ch.NotifyPublish(make(chan amqp091.Confirmation))
+	// for confirm := range confirms {
+	// 	log.Printf("Message delivery confirmed: %b", confirm.Ack)
+	// 	if confirm.Ack {
+	// 		log.Printf("Message delivery confirmed (ack): %d", confirm.DeliveryTag)
+	// 		break
+	// 	} else {
+	// 		log.Printf("Message delivery not confirmed (nack): %d", confirm.DeliveryTag)
+	// 		break
+	// 	}
+	// }
+	log.Print("here????")
 	return nil
 }

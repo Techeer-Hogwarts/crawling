@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Techeer-Hogwarts/crawling/cmd"
+	"github.com/Techeer-Hogwarts/crawling/cmd/blogs"
 	"github.com/Techeer-Hogwarts/crawling/cmd/rabbitmq"
 	"github.com/Techeer-Hogwarts/crawling/cmd/redisInteractor"
 	"github.com/rabbitmq/amqp091-go"
@@ -45,8 +46,7 @@ func main() {
 }
 
 func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedisClient *redis.Client) {
-	var blogRequest cmd.BlogRequest
-	log.Printf("Processing message: %s", msg.Body)
+	var blogRequest blogs.BlogRequest
 	err := json.Unmarshal(msg.Body, &blogRequest)
 	if err != nil {
 		log.Printf("Failed to unmarshal message: %v", err)
