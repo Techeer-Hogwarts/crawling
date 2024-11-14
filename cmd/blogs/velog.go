@@ -117,6 +117,8 @@ func ProcessVelogBlog(url string) BlogResponse {
 			fmt.Printf("Error unmarshalling response JSON: %v\n", err)
 			return BlogResponse{}
 		}
+		// responseJSON, _ := json.MarshalIndent(response, "", "  ")
+		// fmt.Println(string(responseJSON))
 	} else {
 		// Print the error
 		fmt.Printf("Query failed with status code %d: %s\n", resp.StatusCode, body)
