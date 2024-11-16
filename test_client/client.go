@@ -70,7 +70,6 @@ func main() {
 		log.Printf("Received message: %s", string(messageBytes))
 		// Publish message to RabbitMQ in a separate goroutine (async)
 		go func() {
-			log.Printf("이거 왜 안됨?")
 			err := PublishMessage(rabbitChan, queue.Name, messageBytes)
 			if err != nil {
 				log.Printf("Failed to publish message to RabbitMQ: %v", err)
@@ -89,7 +88,6 @@ func main() {
 // PublishMessage sends a message to the specified queue using RabbitMQ's default exchange.
 func PublishMessage(ch *amqp091.Channel, queueName string, message []byte) error {
 	// Put the channel in confirm mode to ensure that all publishings are acknowledged
-	log.Printf("Its hit")
 	if err := ch.Confirm(false); err != nil {
 		log.Printf("Channel could not be put into confirm mode: %v", err)
 		return err
@@ -118,7 +116,6 @@ func PublishMessage(ch *amqp091.Channel, queueName string, message []byte) error
 		log.Printf("Failed to publish message: %v", err)
 		return err
 	}
-	log.Print("here?")
 	// Wait for confirmation of the published message
 	// confirms := ch.NotifyPublish(make(chan amqp091.Confirmation))
 	// for confirm := range confirms {
@@ -131,6 +128,5 @@ func PublishMessage(ch *amqp091.Channel, queueName string, message []byte) error
 	// 		break
 	// 	}
 	// }
-	log.Print("here????")
 	return nil
 }

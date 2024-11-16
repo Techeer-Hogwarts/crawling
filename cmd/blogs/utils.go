@@ -1,39 +1,5 @@
 package blogs
 
-type Image struct {
-	Src           string `json:"src"`
-	Alt           string `json:"alt"`
-	FetchPriority string `json:"fetchpriority"`
-	Decoding      string `json:"decoding"`
-	DataNimg      string `json:"data-nimg"`
-	Style         string `json:"style"`
-}
-
-type Link struct {
-	Href string `json:"href"`
-	Text string `json:"text"`
-}
-
-type Tag struct {
-	Href string `json:"href"`
-	Text string `json:"text"`
-}
-
-type SubInfo struct {
-	Date     string `json:"date"`
-	Comments string `json:"comments"`
-	Likes    string `json:"likes"`
-}
-
-type DivContent struct {
-	HTML    string  `json:"html"`
-	Links   []Link  `json:"links"`
-	Images  []Image `json:"images"`
-	Tags    []Tag   `json:"tags"`
-	SubInfo SubInfo `json:"sub_info"`
-	Text    string  `json:"text"`
-}
-
 type BlogResponse struct {
 	UserID string       `json:"user_id"`
 	Posts  []VelogPosts `json:"posts"`
@@ -42,6 +8,11 @@ type BlogResponse struct {
 type BlogRequest struct {
 	Type string `json:"type"`
 	Data string `json:"data"`
+}
+
+type GraphQLRequest struct {
+	Query     string                 `json:"query"`
+	Variables map[string]interface{} `json:"variables"`
 }
 
 type VelogPosts struct {
@@ -63,4 +34,16 @@ type VelogData struct {
 
 type VelogResponse struct {
 	Data VelogData `json:"data"`
+}
+
+type MediumUserResultWrapper struct {
+	Data MediumUserResult `json:"data"`
+}
+
+type MediumUserResult struct {
+	UserResult MediumUserId `json:"userResult"`
+}
+
+type MediumUserId struct {
+	ID string `json:"id"`
 }
