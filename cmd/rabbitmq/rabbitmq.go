@@ -13,7 +13,7 @@ func NewConnection() *amqp091.Connection {
 	user := config.GetEnv("RABBITMQ_USER", "guest")
 	password := config.GetEnv("RABBITMQ_PASSWORD", "guest")
 	host := config.GetEnv("RABBITMQ_HOST", "localhost")
-	conn, err := amqp091.Dial(fmt.Sprintf("amqp://%s:%s@%s:5672/", user, password, host))
+	conn, err := amqp091.Dial(fmt.Sprintf("amqp://%s:%s@%s:5673/", user, password, host))
 	if err != nil {
 		log.Fatalf("Failed to connect to RabbitMQ: %v", err)
 	}
