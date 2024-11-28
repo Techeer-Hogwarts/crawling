@@ -13,9 +13,12 @@ import (
 
 func NewClient() (*redis.Client, error) {
 	host := config.GetEnv("REDIS_HOST", "localhost")
+	port := config.GetEnv("REDIS_PORT", "6379")
+	password := config.GetEnv("REDIS_PASSWORD", "test")
 	rdb := redis.NewClient(&redis.Options{
-		Addr: fmt.Sprintf("%s:6379", host),
-		DB:   0,
+		Addr:     fmt.Sprintf("%s:%s", host, port),
+		Password: password,
+		DB:       0,
 	})
 	return rdb, nil
 }
