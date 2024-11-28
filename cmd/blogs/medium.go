@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 const graphQLURL = "https://medium.com/_/graphql"
@@ -36,7 +37,7 @@ func ProcessMediumBlog(url string) (BlogResponse, error) {
 	if err != nil {
 		return BlogResponse{}, err
 	}
-	log.Printf("Found posts: %v", posts)
+	posts.BlogURL = fmt.Sprintf("https://medium.com/@%s", username)
 	return posts, nil
 }
 
@@ -132,14 +133,30 @@ func getUserPostsMedium(userID string) (BlogResponse, error) {
 	}
 	// Parse and print the response JSON
 	cleanedBody := removeUnwantedPrefix(string(body))
-	var response interface{}
+	var response MediumResponse
 	if err := json.Unmarshal([]byte(cleanedBody), &response); err != nil {
 		log.Printf("Error unmarshalling response JSON: %v\n", err)
 		return BlogResponse{}, err
 	}
-	responseJSON, _ := json.MarshalIndent(response, "", "  ")
-	fmt.Println(string(responseJSON))
-	return BlogResponse{}, nil
+	postIds := getMediumPostIds(response.Payload.StreamItems)
+	mediumPostsFromResponse := response.Payload.References.Posts
+	var finalPostResponse BlogResponse
+	for _, postID := range postIds {
+		post := mediumPostsFromResponse[postID]
+		finalPostResponse.Posts = append(finalPostResponse.Posts, Posts{
+			Title:       post.Title,
+			URL:         fmt.Sprintf("https://medium.com/p/%s", post.URL),
+			Date:        convertDateTimeMedium(post.Date),
+			Author:      response.Payload.UserInfo.Name,
+			AuthorImage: addMediumUserImage(response.Payload.UserInfo.ImageID),
+			Thumbnail:   addMediumPostImage(post.Virtuals.PreviewImage.ImageID),
+			Category:    "techeer",
+			Tags:        processMediumTags(post.Virtuals.Tags),
+		})
+	}
+	// responseJSON, _ := json.MarshalIndent(response, "", "  ")
+	// fmt.Println(string(responseJSON))
+	return finalPostResponse, nil
 }
 
 func removeUnwantedPrefix(body string) string {
@@ -149,4 +166,48 @@ func removeUnwantedPrefix(body string) string {
 		return body[len(prefix):]
 	}
 	return body
+}
+
+func getMediumPostIds(streamItems []MediumStreamItems) []string {
+	var postIds []string
+	for _, item := range streamItems {
+		if item.ItemType == "postPreview" {
+			postIds = append(postIds, item.PostPreview.PostID)
+		}
+		if len(postIds) > 3 {
+			break
+		}
+	}
+	return postIds
+}
+
+func convertDateTimeMedium(date int64) string {
+	seconds := date / 1000
+	t := time.Unix(seconds, 0).UTC()
+	iso8601Time := fmt.Sprint(t.Format("2006-01-02T15:04:05Z07:00"))
+	return iso8601Time
+}
+
+func addMediumPostImage(imageID string) string {
+	if imageID == "" {
+		return ""
+	}
+	return fmt.Sprintf("https://miro.medium.com/v2/%s", imageID)
+}
+
+func addMediumUserImage(imageID string) string {
+	if imageID == "" {
+		return ""
+	}
+	return fmt.Sprintf("https://miro.medium.com/v2/%s", imageID)
+}
+
+func processMediumTags(tags []MediumTags) []string {
+	var tagNames []string
+	for _, tag := range tags {
+		if tag.Type == "Tag" {
+			tagNames = append(tagNames, tag.Name)
+		}
+	}
+	return tagNames
 }

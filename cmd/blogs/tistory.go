@@ -56,7 +56,7 @@ func getTistoryPosts(url string) (BlogResponse, error) {
 		tistoryBlogResponse.Posts = append(tistoryBlogResponse.Posts, Posts{
 			Title:       item.Title,
 			URL:         item.Link,
-			Date:        convertDateTime(item.PubDate),
+			Date:        convertDateTimeTistory(item.PubDate),
 			Author:      item.Author,
 			AuthorImage: authorProfileImage,
 			Category:    "techeer",
@@ -65,7 +65,7 @@ func getTistoryPosts(url string) (BlogResponse, error) {
 	return tistoryBlogResponse, nil
 }
 
-func convertDateTime(dateString string) string {
+func convertDateTimeTistory(dateString string) string {
 	layout := "Mon, 2 Jan 2006 15:04:05 -0700"
 	parsedTime, err := time.Parse(layout, dateString)
 	if err != nil {
