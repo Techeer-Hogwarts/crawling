@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -63,12 +62,12 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 
 	blogPosts, err := cmd.CrawlBlog(url, host)
 	if err != nil {
-		log.Printf("Failed to crawl blog: %v", err)
+		log.Printf("Failed to crawl blog: %v, userID: %v", err, blogRequest.UserID)
 		return
 	}
 	blogPosts.UserID = blogRequest.UserID
-	responseJSON, _ := json.MarshalIndent(blogPosts, "", "  ")
-	fmt.Println(string(responseJSON))
+	// responseJSON, _ := json.MarshalIndent(blogPosts, "", "  ")
+	// fmt.Println(string(responseJSON))
 
 	err = redisInteractor.SetData(redisContext, newRedisClient, msg.MessageId, blogPosts)
 	if err != nil {
