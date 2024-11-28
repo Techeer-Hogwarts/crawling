@@ -209,5 +209,8 @@ func processMediumTags(tags []MediumTags) []string {
 			tagNames = append(tagNames, tag.Name)
 		}
 	}
+	if tagNames == nil {
+		tagNames = []string{}
+	}
 	return tagNames
 }

@@ -60,6 +60,7 @@ func getTistoryPosts(url string) (BlogResponse, error) {
 			Author:      item.Author,
 			AuthorImage: authorProfileImage,
 			Category:    "techeer",
+			Tags:        []string{},
 		})
 	}
 	return tistoryBlogResponse, nil
