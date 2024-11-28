@@ -117,13 +117,20 @@ func ProcessVelogBlog(url string) (BlogResponse, error) {
 	for i, post := range posts.Posts {
 		posts.Posts[i].URLSlug = fmt.Sprintf("https://velog.io/@%s/%s", username, post.URLSlug)
 	}
-	responseJSON, _ := json.MarshalIndent(BlogResponse{
-		UserID: username,
-		Posts:  posts.Posts,
-	}, "", "  ")
-	fmt.Println(string(responseJSON))
-	return BlogResponse{
-		UserID: username,
-		Posts:  posts.Posts,
-	}, nil
+	postsJson, err := json.MarshalIndent(posts, "", "  ")
+	log.Println(string(postsJson))
+	if err != nil {
+		log.Printf("Error marshalling posts JSON: %v\n", err)
+		return BlogResponse{}, err
+	}
+	return BlogResponse{}, err
+	// responseJSON, _ := json.MarshalIndent(BlogResponse{
+	// 	UserID: username,
+	// 	Posts:  posts.Posts,
+	// }, "", "  ")
+	// fmt.Println(string(responseJSON))
+	// return BlogResponse{
+	// 	UserID: username,
+	// 	Posts:  posts.Posts,
+	// }, nil
 }

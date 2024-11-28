@@ -37,7 +37,7 @@ func ProcessMediumBlog(url string) (BlogResponse, error) {
 		return BlogResponse{}, err
 	}
 	log.Printf("Found posts: %v", posts)
-	return BlogResponse{}, nil
+	return posts, nil
 }
 
 func getUserIdMedium(username string) (string, error) {
@@ -103,13 +103,13 @@ func getUserIdMedium(username string) (string, error) {
 	return userID, nil
 }
 
-func getUserPostsMedium(userID string) ([]BlogResponse, error) {
+func getUserPostsMedium(userID string) (BlogResponse, error) {
 	log.Printf("Getting posts for user ID: %s", userID)
 	url := fmt.Sprintf(mediumURL, userID)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		log.Printf("Error creating request: %v\n", err)
-		return nil, err
+		return BlogResponse{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
@@ -118,28 +118,28 @@ func getUserPostsMedium(userID string) ([]BlogResponse, error) {
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Printf("Error sending request: %v\n", err)
-		return nil, err
+		return BlogResponse{}, err
 	}
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("Error reading response body: %v\n", err)
-		return nil, err
+		return BlogResponse{}, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		fmt.Printf("Query failed with status code %d: %s\n", resp.StatusCode, body)
-		return nil, fmt.Errorf("query failed with status code %d", resp.StatusCode)
+		return BlogResponse{}, fmt.Errorf("query failed with status code %d", resp.StatusCode)
 	}
 	// Parse and print the response JSON
 	cleanedBody := removeUnwantedPrefix(string(body))
 	var response interface{}
 	if err := json.Unmarshal([]byte(cleanedBody), &response); err != nil {
 		log.Printf("Error unmarshalling response JSON: %v\n", err)
-		return nil, err
+		return BlogResponse{}, err
 	}
 	responseJSON, _ := json.MarshalIndent(response, "", "  ")
 	fmt.Println(string(responseJSON))
-	return nil, nil
+	return BlogResponse{}, nil
 }
 
 func removeUnwantedPrefix(body string) string {

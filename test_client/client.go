@@ -14,8 +14,9 @@ import (
 )
 
 type Message struct {
-	Type string `json:"type"`
-	Data string `json:"data"`
+	UserID   int    `json:"userID"`
+	Data     string `json:"data"`
+	Category string `json:"category"`
 }
 
 var (

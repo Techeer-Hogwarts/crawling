@@ -1,13 +1,26 @@
 package blogs
 
 type BlogResponse struct {
-	UserID string       `json:"user_id"`
-	Posts  []VelogPosts `json:"posts"`
+	UserID  int     `json:"userID"`
+	BlogURL string  `json:"blogURL"`
+	Posts   []Posts `json:"posts"`
+}
+
+type Posts struct {
+	Title       string   `json:"title"`
+	URL         string   `json:"url"`
+	Author      string   `json:"author"`
+	AuthorImage string   `json:"authorImage"`
+	Thumbnail   string   `json:"thumbnail"`
+	Category    string   `json:"category"`
+	Date        string   `json:"date"`
+	Tags        []string `json:"tags"`
 }
 
 type BlogRequest struct {
-	Type string `json:"type"`
-	Data string `json:"data"`
+	UserID   int    `json:"userID"`
+	Data     string `json:"data"`
+	Category string `json:"category"`
 }
 
 type GraphQLRequest struct {
@@ -46,4 +59,24 @@ type MediumUserResult struct {
 
 type MediumUserId struct {
 	ID string `json:"id"`
+}
+
+type TistoryResponse struct {
+	Channel TistoryChannel `xml:"channel" json:"channel"`
+}
+
+type TistoryChannel struct {
+	Image TistoryImage  `xml:"image" json:"image"`
+	Items []TistoryItem `xml:"item" json:"item"`
+}
+
+type TistoryImage struct {
+	URL string `xml:"url" json:"url"`
+}
+
+type TistoryItem struct {
+	Title   string `xml:"title" json:"title"`
+	Link    string `xml:"link" json:"link"`
+	PubDate string `xml:"pubDate" json:"pubDate"`
+	Author  string `xml:"author" json:"author"`
 }

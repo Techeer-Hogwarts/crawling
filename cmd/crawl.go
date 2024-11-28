@@ -13,7 +13,7 @@ func CrawlBlog(targetURL, host string) (blogs.BlogResponse, error) {
 	case "velog.io":
 		return blogs.ProcessVelogBlog(targetURL)
 	case "tistory.com":
-		return blogs.BlogResponse{}, blogs.ProcessTistoryBlog(targetURL)
+		return blogs.ProcessTistoryBlog(targetURL)
 	default:
 		return blogs.BlogResponse{}, fmt.Errorf("unsupported host: %s", host)
 	}

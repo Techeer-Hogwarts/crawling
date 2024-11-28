@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"net/url"
+	"strings"
 )
 
 var allowedDomains = map[string]struct{}{
@@ -12,8 +13,13 @@ var allowedDomains = map[string]struct{}{
 }
 
 func IsAllowedDomain(host string) (bool, string) {
-	_, allowed := allowedDomains[host]
-	return allowed, host
+	parts := strings.Split(host, ".")
+	if len(parts) < 2 {
+		return false, host
+	}
+	domain := strings.Join(parts[len(parts)-2:], ".")
+	_, allowed := allowedDomains[domain]
+	return allowed, domain
 }
 
 func ValidateAndSanitizeURL(rawURL string) (string, string, error) {
