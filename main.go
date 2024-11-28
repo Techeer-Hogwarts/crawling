@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Techeer-Hogwarts/crawling/cmd"
+	"github.com/Techeer-Hogwarts/crawling/cmd/blogs"
 	"github.com/Techeer-Hogwarts/crawling/cmd/rabbitmq"
 	"github.com/Techeer-Hogwarts/crawling/cmd/redisInteractor"
 	"github.com/rabbitmq/amqp091-go"
@@ -45,27 +46,28 @@ func main() {
 }
 
 func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedisClient *redis.Client) {
-	var blogRequest cmd.BlogRequest
+	var blogRequest blogs.BlogRequest
 	err := json.Unmarshal(msg.Body, &blogRequest)
 	if err != nil {
 		log.Printf("Failed to unmarshal message: %v", err)
 		return
 	}
 
-	url, err := cmd.ValidateAndSanitizeURL(string(blogRequest.Data))
+	url, host, err := cmd.ValidateAndSanitizeURL(string(blogRequest.Data))
 	if err != nil {
 		log.Printf("Invalid or unsafe URL: %v", err)
 		return
 	}
 	log.Printf("Processing URL: %v", url)
 
-	blogPosts, err := cmd.CrawlBlog(url)
+	blogPosts, err := cmd.CrawlBlog(url, host)
 	if err != nil {
-		log.Printf("Failed to crawl blog: %v", err)
+		log.Printf("Failed to crawl blog: %v, userID: %v", err, blogRequest.UserID)
 		return
 	}
-
-	// blogPosts.UserID = blogRequest.UserID
+	blogPosts.UserID = blogRequest.UserID
+	// responseJSON, _ := json.MarshalIndent(blogPosts, "", "  ")
+	// fmt.Println(string(responseJSON))
 
 	err = redisInteractor.SetData(redisContext, newRedisClient, msg.MessageId, blogPosts)
 	if err != nil {

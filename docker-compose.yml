@@ -1,26 +1,28 @@
 version: '3.7'
 
 services:
-  web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-    restart: always
-    environment:
-      - REDIS_HOST=hogwartsredis
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASS=guest
-      - RABBITMQ_HOST=hogwartsmq
-    tty: true
+  # web:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #   restart: always
+  #   environment:
+  #     - REDIS_HOST=hogwartsredis
+  #     - REDIS_PORT=6379
+      # - REDIS_PASSWORD=test
+  #     - RABBITMQ_USER=guest
+  #     - RABBITMQ_PASS=guest
+  #     - RABBITMQ_HOST=hogwartsmq
+  #   tty: true
   
   hogwartsmq:
     image: "rabbitmq:3-management"
     ports:
       - "5672:5672"
-      - "15672:15672"
-      - "15692:15692"
+      - "15673:15672"
+      - "15693:15692"
     environment:
       - RABBITMQ_DEFAULT_USER=guest
       - RABBITMQ_DEFAULT_PASS=guest
@@ -30,4 +32,6 @@ services:
     image: "redis:alpine"
     ports:
       - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=test
     tty: true
