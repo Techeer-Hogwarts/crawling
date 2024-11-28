@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 // ProcessVelogBlog processes a Velog blog and returns the blog posts
@@ -107,20 +108,28 @@ func ProcessVelogBlog(url string) (BlogResponse, error) {
 	for i, post := range posts.Posts {
 		posts.Posts[i].URLSlug = fmt.Sprintf("https://velog.io/@%s/%s", username, post.URLSlug)
 	}
-	postsJson, err := json.MarshalIndent(posts, "", "  ")
-	fmt.Println(string(postsJson))
-	if err != nil {
-		log.Printf("Error marshalling posts JSON: %v\n", err)
-		return BlogResponse{}, err
+	var velogBlogResponse BlogResponse
+	for _, post := range posts.Posts {
+		velogBlogResponse.Posts = append(velogBlogResponse.Posts, Posts{
+			Title:       post.Title,
+			URL:         post.URLSlug,
+			Author:      post.User.Username,
+			AuthorImage: post.User.Profile.Thumbnail,
+			Thumbnail:   post.Thumbnail,
+			Date:        convertDateTimeVelog(post.ReleasedAt),
+			Tags:        post.Tags,
+			Category:    "techeer",
+		})
 	}
-	return BlogResponse{}, err
-	// responseJSON, _ := json.MarshalIndent(BlogResponse{
-	// 	UserID: username,
-	// 	Posts:  posts.Posts,
-	// }, "", "  ")
-	// fmt.Println(string(responseJSON))
-	// return BlogResponse{
-	// 	UserID: username,
-	// 	Posts:  posts.Posts,
-	// }, nil
+	velogBlogResponse.BlogURL = fmt.Sprintf("https://velog.io/@%s", username)
+	return velogBlogResponse, nil
+}
+
+func convertDateTimeVelog(dt string) string {
+	parsedTime, err := time.Parse("2006-01-02T15:04:05.999Z", dt)
+	if err != nil {
+		fmt.Println("Error parsing time:", err)
+		return "0000-00-00T00:00:00Z"
+	}
+	return parsedTime.Format("2006-01-02T15:04:05Z")
 }
