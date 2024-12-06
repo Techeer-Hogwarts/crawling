@@ -20,7 +20,7 @@ type Posts struct {
 
 type BlogRequest struct {
 	UserID   int    `json:"userID"`
-	Data     string `json:"data"`
+	Data     []byte `json:"data"`
 	Category string `json:"category"`
 }
 
