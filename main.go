@@ -60,6 +60,8 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 	}
 	log.Printf("Processing URL: %v", url)
 
+	blogRequest.UserID = cmd.ExtractUserID(msg.MessageId)
+
 	blogPosts, err := cmd.CrawlBlog(url, host)
 	if err != nil {
 		log.Printf("Failed to crawl blog: %v, userID: %v", err, blogRequest.UserID)
