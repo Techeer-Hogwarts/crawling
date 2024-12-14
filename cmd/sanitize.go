@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 )
 
@@ -37,4 +38,17 @@ func ValidateAndSanitizeURL(rawURL string) (string, string, error) {
 	parsedURL.RawQuery = ""
 
 	return parsedURL.String(), host, nil
+}
+
+func ExtractUserID(messageID string) int {
+	parts := strings.Split(messageID, "-")
+	if len(parts) < 3 {
+		return 0
+	}
+	lastIndex := len(parts) - 1
+	n, err := strconv.Atoi(parts[lastIndex])
+	if err != nil {
+		return 0
+	}
+	return n
 }

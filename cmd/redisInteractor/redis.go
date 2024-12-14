@@ -32,6 +32,7 @@ func SetData(ctx context.Context, rdb *redis.Client, key string, value blogs.Blo
 	err = rdb.HSet(ctx, key, map[string]interface{}{
 		"result":    string(jsonValue),
 		"processed": "true",
+		"userId":    value.UserID,
 	}).Err()
 	if err != nil {
 		log.Printf("Failed to set data: %v", err)

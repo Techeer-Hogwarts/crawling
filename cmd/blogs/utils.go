@@ -2,7 +2,7 @@ package blogs
 
 // for general blos request and response
 type BlogResponse struct {
-	UserID  int     `json:"userID"`
+	UserID  int     `json:"userId"`
 	BlogURL string  `json:"blogURL"`
 	Posts   []Posts `json:"posts"`
 }
