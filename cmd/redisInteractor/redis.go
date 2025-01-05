@@ -42,8 +42,8 @@ func SetData(ctx context.Context, rdb *redis.Client, key string, value blogs.Blo
 	return nil
 }
 
-func NotifyCompletion(ctx context.Context, rdb *redis.Client, key string) error {
-	err := rdb.Publish(ctx, "task_completions", key).Err()
+func NotifyCompletion(ctx context.Context, rdb *redis.Client, key, msgType string) error {
+	err := rdb.Publish(ctx, msgType, key).Err()
 	if err != nil {
 		log.Fatalf("Failed to publish completion message to Redis: %v", err)
 	}
