@@ -53,6 +53,9 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 		return
 	}
 
+	// signUp_blog_fetch, blogs_daily_update, shared_post_fetch
+	crawlingType := msg.Type
+
 	url, host, err := cmd.ValidateAndSanitizeURL(string(blogRequest.Data))
 	if err != nil {
 		log.Printf("Invalid or unsafe URL: %v", err)
@@ -62,7 +65,7 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 
 	blogRequest.UserID = cmd.ExtractUserID(msg.MessageId)
 
-	blogPosts, err := cmd.CrawlBlog(url, host)
+	blogPosts, err := cmd.CrawlBlog(url, host, crawlingType)
 	if err != nil {
 		log.Printf("Failed to crawl blog: %v, userID: %v", err, blogRequest.UserID)
 		return
@@ -77,7 +80,7 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 		return
 	}
 
-	err = redisInteractor.NotifyCompletion(redisContext, newRedisClient, msg.MessageId)
+	err = redisInteractor.NotifyCompletion(redisContext, newRedisClient, msg.MessageId, crawlingType)
 	if err != nil {
 		log.Printf("Failed to notify completion: %v", err)
 		return
