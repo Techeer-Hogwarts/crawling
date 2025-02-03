@@ -2,34 +2,36 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/Techeer-Hogwarts/crawling/cmd/blogs"
 )
 
-func CrawlBlog(targetURL, host, crawlingType string) (blogs.BlogResponse, error) {
-	if crawlingType == "signUp_blog_fetch" || crawlingType == "blogs_daily_update" {
+func CrawlBlog(targetURL, host, category string) (blogs.BlogResponse, error) {
+	log.Println("Crawling blog:", targetURL)
+	if category == "TECHEER" {
 		switch host {
 		case "medium.com":
-			return blogs.ProcessMediumBlog(targetURL)
+			return blogs.ProcessMediumBlog(targetURL, 3)
 		case "velog.io":
-			return blogs.ProcessVelogBlog(targetURL)
+			return blogs.ProcessVelogBlog(targetURL, 3)
 		case "tistory.com":
-			return blogs.ProcessTistoryBlog(targetURL)
+			return blogs.ProcessTistoryBlog(targetURL, 2)
 		default:
 			return blogs.BlogResponse{}, fmt.Errorf("unsupported host: %s", host)
 		}
-	} else if crawlingType == "shared_post_fetch" {
+	} else if category == "SHARED" {
 		switch host {
 		case "medium.com":
-			return blogs.ProcessMediumBlog(targetURL)
+			return blogs.ProcessSingleMediumBlog(targetURL)
 		case "velog.io":
-			return blogs.ProcessVelogBlog(targetURL)
+			return blogs.ProcessSingleVelogBlog(targetURL)
 		case "tistory.com":
-			return blogs.ProcessTistoryBlog(targetURL)
+			return blogs.ProcessSingleTistoryBlog(targetURL)
 		default:
 			return blogs.BlogResponse{}, fmt.Errorf("unsupported host: %s", host)
 		}
 	} else {
-		return blogs.BlogResponse{}, fmt.Errorf("unsupported crawling type: %s", crawlingType)
+		return blogs.BlogResponse{}, fmt.Errorf("unsupported category type: %s", category)
 	}
 }

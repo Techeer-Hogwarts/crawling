@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
@@ -15,7 +16,7 @@ const graphQLURL = "https://medium.com/_/graphql"
 const mediumURL = "https://medium.com/_/api/users/%v/profile/stream"
 
 // ProcessMediumBlog processes a Medium blog and returns the blog posts
-func ProcessMediumBlog(url string) (BlogResponse, error) {
+func ProcessMediumBlog(url string, limit int) (BlogResponse, error) {
 	var username string
 	urlParts := strings.Split(url, "/")
 	for _, part := range urlParts {
@@ -33,7 +34,7 @@ func ProcessMediumBlog(url string) (BlogResponse, error) {
 		return BlogResponse{}, err
 	}
 	log.Printf("User ID: %s", userID)
-	posts, err := getUserPostsMedium(userID)
+	posts, err := getUserPostsMedium(userID, limit)
 	if err != nil {
 		return BlogResponse{}, err
 	}
@@ -104,7 +105,7 @@ func getUserIdMedium(username string) (string, error) {
 	return userID, nil
 }
 
-func getUserPostsMedium(userID string) (BlogResponse, error) {
+func getUserPostsMedium(userID string, limit int) (BlogResponse, error) {
 	log.Printf("Getting posts for user ID: %s", userID)
 	url := fmt.Sprintf(mediumURL, userID)
 	req, err := http.NewRequest("GET", url, nil)
@@ -138,7 +139,7 @@ func getUserPostsMedium(userID string) (BlogResponse, error) {
 		log.Printf("Error unmarshalling response JSON: %v\n", err)
 		return BlogResponse{}, err
 	}
-	postIds := getMediumPostIds(response.Payload.StreamItems)
+	postIds := getMediumPostIds(response.Payload.StreamItems, limit)
 	mediumPostsFromResponse := response.Payload.References.Posts
 	var finalPostResponse BlogResponse
 	for _, postID := range postIds {
@@ -168,13 +169,13 @@ func removeUnwantedPrefix(body string) string {
 	return body
 }
 
-func getMediumPostIds(streamItems []MediumStreamItems) []string {
+func getMediumPostIds(streamItems []MediumStreamItems, limit int) []string {
 	var postIds []string
 	for _, item := range streamItems {
 		if item.ItemType == "postPreview" {
 			postIds = append(postIds, item.PostPreview.PostID)
 		}
-		if len(postIds) > 3 {
+		if len(postIds) > limit {
 			break
 		}
 	}
@@ -213,4 +214,51 @@ func processMediumTags(tags []MediumTags) []string {
 		tagNames = []string{}
 	}
 	return tagNames
+}
+
+// ProcessSingleMediumBlog processes a single Medium blog and returns the blog posts
+func ProcessSingleMediumBlog(blogURL string) (BlogResponse, error) {
+	log.Printf("Processing single Medium blog for URL: %s", blogURL)
+	posts, err := ProcessMediumBlog(blogURL, 40)
+	if err != nil {
+		return BlogResponse{}, err
+	}
+	urlParts := strings.Split(blogURL, "-")
+	log.Printf("URL parts: %v", urlParts)
+	newUrl := strings.Join(urlParts[:len(urlParts)-1], "-")
+	log.Printf("New URL: %s", newUrl)
+	urlWithoutTag, err := url.PathUnescape(newUrl)
+	log.Printf("URL without tag: %s", urlWithoutTag)
+	originalURLDecoded := fmt.Sprintf("%s-%s", urlWithoutTag, urlParts[len(urlParts)-1])
+	log.Printf("Original URL decoded: %s", originalURLDecoded)
+	if err != nil {
+		log.Printf("Error decoding URL: %v", err)
+		return BlogResponse{}, err
+	}
+	var username string
+	usernameParts := strings.Split(blogURL, "/")
+	for _, part := range usernameParts {
+		if len(part) > 0 && part[0] == '@' {
+			username = part
+			break
+		}
+	}
+	if username == "" {
+		return BlogResponse{}, fmt.Errorf("username not found in URL")
+	}
+	newURLDecoded := strings.Replace(originalURLDecoded, username, "p", 1)
+	newBlogURL := strings.Replace(blogURL, username, "p", 1)
+	newPosts := []Posts{}
+	for i, post := range posts.Posts {
+		log.Printf("Post URL: %s, Original URL: %s, Encoded URL: %s", post.URL, newURLDecoded, newBlogURL)
+		if post.URL == newURLDecoded || post.URL == newBlogURL {
+			categoryFixedPost := posts.Posts[i]
+			categoryFixedPost.Category = "shared"
+			newPosts = []Posts{categoryFixedPost}
+			log.Printf("Category fixed post: %v", categoryFixedPost)
+			break
+		}
+	}
+	posts.Posts = newPosts
+	return posts, nil
 }
