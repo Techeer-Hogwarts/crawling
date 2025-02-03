@@ -12,7 +12,8 @@ RUN go mod download
 COPY . .
 
 # 고 바이너리 빌드 (arm64 아키텍처). amd64 아키텍처로 빌드하려면 GOARCH=amd64 로 변경
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o crawler .
+ARG TARGETARCH
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=$TARGETARCH go build -o crawler .
 
 # 이미지 바이너리 빌드 할때 사용할 베이스 이미지. 가벼운 알파인 리눅스 사용
 FROM alpine:latest
