@@ -55,7 +55,6 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 
 	// signUp_blog_fetch, blogs_daily_update, shared_post_fetch
 	crawlingType := msg.Type
-	category := blogRequest.Category
 
 	url, host, err := cmd.ValidateAndSanitizeURL(string(blogRequest.Data))
 	if err != nil {
@@ -66,7 +65,7 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 
 	blogRequest.UserID = cmd.ExtractUserID(msg.MessageId)
 
-	blogPosts, err := cmd.CrawlBlog(url, host, category)
+	blogPosts, err := cmd.CrawlBlog(url, host, crawlingType)
 	if err != nil {
 		log.Printf("Failed to crawl blog: %v, userID: %v", err, blogRequest.UserID)
 		return

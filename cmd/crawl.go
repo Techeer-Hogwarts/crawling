@@ -7,9 +7,9 @@ import (
 	"github.com/Techeer-Hogwarts/crawling/cmd/blogs"
 )
 
-func CrawlBlog(targetURL, host, category string) (blogs.BlogResponse, error) {
+func CrawlBlog(targetURL, host, crawlingType string) (blogs.BlogResponse, error) {
 	log.Println("Crawling blog:", targetURL)
-	if category == "TECHEER" {
+	if crawlingType == "signUp_blog_fetch" || crawlingType == "blogs_daily_update" {
 		switch host {
 		case "medium.com":
 			return blogs.ProcessMediumBlog(targetURL, 3)
@@ -20,7 +20,7 @@ func CrawlBlog(targetURL, host, category string) (blogs.BlogResponse, error) {
 		default:
 			return blogs.BlogResponse{}, fmt.Errorf("unsupported host: %s", host)
 		}
-	} else if category == "SHARED" {
+	} else if crawlingType == "shared_post_fetch" {
 		switch host {
 		case "medium.com":
 			return blogs.ProcessSingleMediumBlog(targetURL)
@@ -32,6 +32,6 @@ func CrawlBlog(targetURL, host, category string) (blogs.BlogResponse, error) {
 			return blogs.BlogResponse{}, fmt.Errorf("unsupported host: %s", host)
 		}
 	} else {
-		return blogs.BlogResponse{}, fmt.Errorf("unsupported category type: %s", category)
+		return blogs.BlogResponse{}, fmt.Errorf("unsupported category type: %s", crawlingType)
 	}
 }
