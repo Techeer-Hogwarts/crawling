@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/Techeer-Hogwarts/crawling/cmd/rabbitmq"
@@ -14,8 +15,14 @@ import (
 )
 
 type Message struct {
-	UserID   int    `json:"userID"`
+	UserID   string `json:"userID"`
 	Data     string `json:"data"`
+	Category string `json:"category"`
+}
+
+type FinalMessage struct {
+	UserID   int    `json:"userID"`
+	Data     []byte `json:"data"`
 	Category string `json:"category"`
 }
 
@@ -56,9 +63,14 @@ func main() {
 			log.Printf("Failed to decode request body: %v", err)
 			return
 		}
-
+		userID, err := strconv.Atoi(msg.UserID)
+		fmsg := FinalMessage{
+			UserID:   userID,
+			Data:     []byte(msg.Data),
+			Category: msg.Category,
+		}
 		// Encode the message to JSON []byte
-		messageBytes, err := json.Marshal(msg)
+		messageBytes, err := json.Marshal(fmsg)
 		if err != nil {
 			http.Error(w, "Failed to encode message", http.StatusInternalServerError)
 			log.Printf("Failed to encode message to JSON: %v", err)
@@ -71,7 +83,7 @@ func main() {
 		log.Printf("Received message: %s", string(messageBytes))
 		// Publish message to RabbitMQ in a separate goroutine (async)
 		go func() {
-			err := PublishMessage(rabbitChan, queue.Name, messageBytes)
+			err := PublishMessage(rabbitChan, queue.Name, messageBytes, string(msg.UserID))
 			if err != nil {
 				log.Printf("Failed to publish message to RabbitMQ: %v", err)
 			} else {
@@ -87,7 +99,7 @@ func main() {
 }
 
 // PublishMessage sends a message to the specified queue using RabbitMQ's default exchange.
-func PublishMessage(ch *amqp091.Channel, queueName string, message []byte) error {
+func PublishMessage(ch *amqp091.Channel, queueName string, message []byte, userID string) error {
 	// Put the channel in confirm mode to ensure that all publishings are acknowledged
 	if err := ch.Confirm(false); err != nil {
 		log.Printf("Channel could not be put into confirm mode: %v", err)
@@ -101,7 +113,8 @@ func PublishMessage(ch *amqp091.Channel, queueName string, message []byte) error
 	// 		log.Printf("Message returned: %s", string(ret.Body))
 	// 	}
 	// }()
-
+	messageID := fmt.Sprintf("task-%d:1-%s", time.Now().Unix(), userID)
+	log.Printf("Publishing message with ID: %s", messageID)
 	err := ch.Publish(
 		"",        // exchange - default exchange
 		queueName, // routing key - queue name
@@ -110,7 +123,7 @@ func PublishMessage(ch *amqp091.Channel, queueName string, message []byte) error
 		amqp091.Publishing{
 			ContentType: "plain/text", // Using plain text for message content
 			Body:        message,      // Using byte array for JSON-encoded message
-			MessageId:   fmt.Sprintf("task-%d", time.Now().Unix()),
+			MessageId:   messageID,
 		},
 	)
 	if err != nil {

@@ -70,6 +70,7 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 		log.Printf("Failed to crawl blog: %v, userID: %v", err, blogRequest.UserID)
 		return
 	}
+	log.Printf("User ID: %v, Blog Posts: %v", blogRequest.UserID, blogPosts)
 	blogPosts.UserID = blogRequest.UserID
 	// responseJSON, _ := json.MarshalIndent(blogPosts, "", "  ")
 	// fmt.Println(string(responseJSON))

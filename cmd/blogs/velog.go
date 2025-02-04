@@ -7,12 +7,13 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 )
 
 // ProcessVelogBlog processes a Velog blog and returns the blog posts
-func ProcessVelogBlog(url string) (BlogResponse, error) {
+func ProcessVelogBlog(url string, limit int) (BlogResponse, error) {
 	apiurl := "https://v3.velog.io/graphql"
 	var username string
 	urlParts := strings.Split(url, "/")
@@ -56,7 +57,7 @@ func ProcessVelogBlog(url string) (BlogResponse, error) {
 			"username": username,
 			"tag":      "",
 			"cursor":   "",
-			"limit":    3,
+			"limit":    limit,
 		},
 	}
 
@@ -132,4 +133,28 @@ func convertDateTimeVelog(dt string) string {
 		return "0000-00-00T00:00:00Z"
 	}
 	return parsedTime.Format("2006-01-02T15:04:05Z")
+}
+
+func ProcessSingleVelogBlog(blogURL string) (BlogResponse, error) {
+	log.Printf("Processing single Velog blog for URL: %s", blogURL)
+	posts, err := ProcessVelogBlog(blogURL, 40)
+	if err != nil {
+		return BlogResponse{}, err
+	}
+	originalURLDecoded, err := url.PathUnescape(blogURL)
+	if err != nil {
+		log.Printf("Error decoding URL: %v", err)
+		return BlogResponse{}, err
+	}
+	newPosts := []Posts{}
+	for i, post := range posts.Posts {
+		if post.URL == originalURLDecoded || post.URL == blogURL {
+			categoryFixedPost := posts.Posts[i]
+			categoryFixedPost.Category = "shared"
+			newPosts = []Posts{categoryFixedPost}
+			break
+		}
+	}
+	posts.Posts = newPosts
+	return posts, nil
 }
