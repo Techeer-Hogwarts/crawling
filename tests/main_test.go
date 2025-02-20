@@ -13,7 +13,7 @@ import (
 func TestMainHandler(t *testing.T) {
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
-		t.Fatalf("Could not create request: %v", err)
+		t.Errorf("Could not create request: %v", err)
 	}
 
 	rr := httptest.NewRecorder()

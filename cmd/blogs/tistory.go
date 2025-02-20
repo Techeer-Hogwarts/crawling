@@ -34,19 +34,22 @@ func ProcessTistoryBlog(url string, limit int) (BlogResponse, error) {
 func getTistoryPosts(url string, limit int) (BlogResponse, error) {
 	resp, err := http.Get(url)
 	if err != nil {
-		log.Fatalf("Error fetching sitemap: %v", err)
+		log.Printf("Error fetching sitemap: %v", err)
+		return BlogResponse{}, err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Fatalf("Unexpected HTTP status: %s", resp.Status)
+		log.Printf("Unexpected HTTP status: %s", resp.Status)
+		return BlogResponse{}, fmt.Errorf("unexpected HTTP status: %s", resp.Status)
 	}
 	var tistoryResponse TistoryResponse
 
 	decoder := xml.NewDecoder(resp.Body)
 	err = decoder.Decode(&tistoryResponse)
 	if err != nil {
-		log.Fatalf("Error decoding XML: %v", err)
+		log.Printf("Error decoding XML: %v", err)
+		return BlogResponse{}, err
 	}
 	authorProfileImage := tistoryResponse.Channel.Image.URL
 	var tistoryBlogResponse BlogResponse
