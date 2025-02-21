@@ -23,6 +23,9 @@ func ProcessVelogBlog(url string, limit int) (BlogResponse, error) {
 			break
 		}
 	}
+	if username == "" {
+		return BlogResponse{}, fmt.Errorf("invalid velog URL")
+	}
 	log.Printf("Processing Velog blog for user: %s", username)
 
 	query := `
