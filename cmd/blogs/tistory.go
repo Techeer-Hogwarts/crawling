@@ -13,7 +13,7 @@ import (
 // ProcessTistoryBlog processes Tistory blog sitemap.xml and returns the blog posts
 func ProcessTistoryBlog(url string, limit int) (BlogResponse, error) {
 	var cleanURL string
-	if strings.Contains(url, "tistory.com") {
+	if strings.Contains(url, ".tistory.com") {
 		cleanURL = strings.Split(url, ".tistory.com")[0] + ".tistory.com/rss"
 	} else {
 		return BlogResponse{}, fmt.Errorf("invalid tistory URL")
