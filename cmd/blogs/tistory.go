@@ -133,6 +133,8 @@ func extractImageSrc(htmlContent string) string {
 					}
 				}
 			}
+		default:
+			continue
 		}
 	}
 }
