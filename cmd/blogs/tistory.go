@@ -60,7 +60,6 @@ func getTistoryPosts(url string, limit int) (BlogResponse, error) {
 			break
 		}
 		thumbnail := extractImageSrc(item.Description)
-		log.Printf("Thumbnail: %s", thumbnail)
 		tistoryBlogResponse.Posts = append(tistoryBlogResponse.Posts, Posts{
 			Title:       item.Title,
 			URL:         item.Link,
