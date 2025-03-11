@@ -8,6 +8,8 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"golang.org/x/net/html"
 )
 
 // ProcessTistoryBlog processes Tistory blog sitemap.xml and returns the blog posts
@@ -57,6 +59,8 @@ func getTistoryPosts(url string, limit int) (BlogResponse, error) {
 		if i > limit {
 			break
 		}
+		thumbnail := extractImageSrc(item.Description)
+		log.Printf("Thumbnail: %s", thumbnail)
 		tistoryBlogResponse.Posts = append(tistoryBlogResponse.Posts, Posts{
 			Title:       item.Title,
 			URL:         item.Link,
@@ -64,6 +68,7 @@ func getTistoryPosts(url string, limit int) (BlogResponse, error) {
 			Author:      item.Author,
 			AuthorImage: authorProfileImage,
 			Category:    "techeer",
+			Thumbnail:   thumbnail,
 			Tags:        []string{},
 		})
 	}
@@ -109,4 +114,26 @@ func ProcessSingleTistoryBlog(blogURL string) (BlogResponse, error) {
 	// }
 	// fmt.Println(string(jsonResponse))
 	return posts, nil
+}
+
+func extractImageSrc(htmlContent string) string {
+	tokenizer := html.NewTokenizer(strings.NewReader(htmlContent))
+
+	for {
+		tt := tokenizer.Next()
+		token := tokenizer.Token()
+		switch tt {
+		case html.ErrorToken:
+			log.Printf("Error tokenizing HTML: %v", tokenizer.Err())
+			return ""
+		case html.SelfClosingTagToken:
+			if token.Data == "img" {
+				for _, attr := range token.Attr {
+					if attr.Key == "src" {
+						return attr.Val
+					}
+				}
+			}
+		}
+	}
 }

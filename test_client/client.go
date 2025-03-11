@@ -83,7 +83,7 @@ func main() {
 		log.Printf("Received message: %s", string(messageBytes))
 		// Publish message to RabbitMQ in a separate goroutine (async)
 		go func() {
-			err := PublishMessage(rabbitChan, queue.Name, messageBytes, string(msg.UserID))
+			err := PublishMessage(rabbitChan, queue.Name, messageBytes, string(msg.UserID), string(msg.Category))
 			if err != nil {
 				log.Printf("Failed to publish message to RabbitMQ: %v", err)
 			} else {
@@ -99,7 +99,7 @@ func main() {
 }
 
 // PublishMessage sends a message to the specified queue using RabbitMQ's default exchange.
-func PublishMessage(ch *amqp091.Channel, queueName string, message []byte, userID string) error {
+func PublishMessage(ch *amqp091.Channel, queueName string, message []byte, userID, blogCategory string) error {
 	// Put the channel in confirm mode to ensure that all publishings are acknowledged
 	if err := ch.Confirm(false); err != nil {
 		log.Printf("Channel could not be put into confirm mode: %v", err)
@@ -124,6 +124,7 @@ func PublishMessage(ch *amqp091.Channel, queueName string, message []byte, userI
 			ContentType: "plain/text", // Using plain text for message content
 			Body:        message,      // Using byte array for JSON-encoded message
 			MessageId:   messageID,
+			Type:        blogCategory,
 		},
 	)
 	if err != nil {

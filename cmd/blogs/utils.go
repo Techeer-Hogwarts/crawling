@@ -141,8 +141,9 @@ type TistoryImage struct {
 }
 
 type TistoryItem struct {
-	Title   string `xml:"title" json:"title"`
-	Link    string `xml:"link" json:"link"`
-	PubDate string `xml:"pubDate" json:"pubDate"`
-	Author  string `xml:"author" json:"author"`
+	Title       string `xml:"title" json:"title"`
+	Link        string `xml:"link" json:"link"`
+	Description string `xml:"description" json:"description"`
+	PubDate     string `xml:"pubDate" json:"pubDate"`
+	Author      string `xml:"author" json:"author"`
 }
