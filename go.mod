@@ -1,10 +1,11 @@
 module github.com/Techeer-Hogwarts/crawling
 
-go 1.20
+go 1.23.0
 
 require (
 	github.com/rabbitmq/amqp091-go v1.10.0
 	github.com/redis/go-redis/v9 v9.6.1
+	golang.org/x/net v0.37.0
 )
 
 require (
