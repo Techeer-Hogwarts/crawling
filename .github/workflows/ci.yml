@@ -102,5 +102,6 @@ jobs:
               "imageName": "'"$IMAGE_NAME"'",
               "imageTag": "'"$DOCKER_IMAGE_TAG"'",
               "commitLink": "'"$commit_link"'",
+              "environment": "production",
               "secret": "'"$SLACK_SECRET"'"
             }'
