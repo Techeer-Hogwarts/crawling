@@ -32,26 +32,24 @@ func InitTracer(ctx context.Context) (*trace.TracerProvider, error) {
 		)),
 	)
 	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 	return tp, nil
 }
 
 func ExtractTraceContext(msg amqp091.Delivery) context.Context {
 	propagator := otel.GetTextMapPropagator()
-	// carrier := propagation.MapCarrier{}
-	// for key, value := range msg.Headers {
-	// 	if strValue, ok := value.(string); ok {
-	// 		carrier[key] = strValue
-	// 	}
-	// }
 	ctx := context.Background()
-	// propagator.Extract(ctx, carrier)
 	carrier := propagation.MapCarrier{}
 	log.Printf("Headers: %v", msg.Headers)
 	for key, value := range msg.Headers {
-		log.Printf("Key: %s, Value: %v", key, value)
-		if strValue, ok := value.(string); ok {
-			carrier.Set(key, strValue)
-			log.Printf("Set key: %s, value: %s", key, strValue)
+		log.Printf("Key: %s, Value: %v (%T)", key, value, value)
+		switch v := value.(type) {
+		case string:
+			carrier.Set(key, v)
+		case []byte:
+			carrier.Set(key, string(v))
+		default:
+			log.Printf("Unsupported header type: %T", v)
 		}
 	}
 	ctx = propagator.Extract(ctx, carrier)
@@ -63,7 +61,8 @@ func ExtractTraceContext(msg amqp091.Delivery) context.Context {
 
 func logTraceContext(ctx context.Context) {
 	spanContext := oteltrace.SpanContextFromContext(ctx)
-	log.Printf("Span Context: %v", spanContext.TraceID())
+	log.Printf("Extracted Trace ID: %s", oteltrace.SpanContextFromContext(ctx).TraceID())
+	log.Printf("Extracted Span ID: %s", oteltrace.SpanContextFromContext(ctx).SpanID())
 	if spanContext.IsValid() {
 		// Log the trace ID and span ID
 		log.Printf("Trace ID: %s, Span ID: %s", spanContext.TraceID().String(), spanContext.SpanID().String())
