@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"strconv"
 	"sync"
 	"time"
 
@@ -13,39 +14,65 @@ import (
 	"github.com/Techeer-Hogwarts/crawling/cmd/redisInteractor"
 	"github.com/rabbitmq/amqp091-go"
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func main() {
+	ctx := context.Background()
+	tracerProvider, err := cmd.InitTracer(ctx)
+	if err != nil {
+		log.Fatalf("Failed to initialize tracing: %v", err)
+	}
+
+	defer func() {
+		_ = tracerProvider.Shutdown(ctx)
+	}()
+
 	newConnection := rabbitmq.NewConnection()
 	defer newConnection.Close()
+
 	newRedisClient, err := redisInteractor.NewClient()
 	if err != nil {
 		log.Fatalf("Failed to create a new Redis client: %v", err)
 	}
-	redisContext := context.Background()
+	defer newRedisClient.Close()
+
 	newChannel := rabbitmq.NewChannel(newConnection)
 	defer newChannel.Close()
+
 	queue1 := rabbitmq.DeclareQueue(newChannel, "crawl_queue")
 	consumedMessages := rabbitmq.ConsumeMessages(newChannel, queue1.Name)
 
 	const numWorkers = 5 // Number of concurrent workers
 	var wg sync.WaitGroup
-	wg.Add(numWorkers) // Add the number of workers to the WaitGroup
+	wg.Add(numWorkers)
+
+	tracer := otel.Tracer("worker")
 
 	for i := 0; i < numWorkers; i++ {
 		log.Printf("Starting worker %d", i)
-		go func(workerID int) { // Each worker is a goroutine
+		go func(workerID int) {
 			defer wg.Done()
-			for msg := range consumedMessages { // Continuously process messages
+			for msg := range consumedMessages {
+				ctx, span := tracer.Start(context.Background(), "ReceiveMessage",
+					trace.WithAttributes(attribute.String("worker_id", strconv.Itoa(workerID))))
 				log.Printf("Worker %d processing message: %s", workerID, msg.Body)
-				processMessage(msg, redisContext, newRedisClient)
+				processMessage(ctx, msg, newRedisClient)
+				span.End()
 			}
 		}(i)
 	}
 	wg.Wait()
 }
 
-func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedisClient *redis.Client) {
+func processMessage(ctx context.Context, msg amqp091.Delivery, newRedisClient *redis.Client) {
+	tracer := otel.Tracer("worker")
+	ctx, span := tracer.Start(ctx, "DecodeAndValidate",
+		trace.WithAttributes(attribute.String("message_id", msg.MessageId)),
+	)
+	defer span.End()
 	var blogRequest blogs.BlogRequest
 	err := json.Unmarshal(msg.Body, &blogRequest)
 	if err != nil {
@@ -64,8 +91,12 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 	log.Printf("Processing URL: %v", url)
 
 	blogRequest.UserID = cmd.ExtractUserID(msg.MessageId)
-
+	ctx, crawlSpan := tracer.Start(ctx, "CrawlBlog",
+		trace.WithAttributes(attribute.String("url", url), attribute.String("host", host)),
+	)
 	blogPosts, err := cmd.CrawlBlog(url, host, crawlingType)
+	crawlSpan.End()
+
 	if err != nil {
 		log.Printf("Failed to crawl blog: %v, userID: %v", err, blogRequest.UserID)
 		return
@@ -75,13 +106,22 @@ func processMessage(msg amqp091.Delivery, redisContext context.Context, newRedis
 	// responseJSON, _ := json.MarshalIndent(blogPosts, "", "  ")
 	// fmt.Println(string(responseJSON))
 
-	err = redisInteractor.SetData(redisContext, newRedisClient, msg.MessageId, blogPosts)
+	ctx, redisSpan := tracer.Start(ctx, "SetRedisData",
+		trace.WithAttributes(attribute.String("message_id", msg.MessageId)),
+	)
+	err = redisInteractor.SetData(ctx, newRedisClient, msg.MessageId, blogPosts)
+	defer redisSpan.End()
 	if err != nil {
 		log.Printf("Failed to set data: %v", err)
 		return
 	}
 
-	err = redisInteractor.NotifyCompletion(redisContext, newRedisClient, msg.MessageId, crawlingType)
+	ctx, notifySpan := tracer.Start(ctx, "NotifyCompletion",
+		trace.WithAttributes(attribute.String("message_id", msg.MessageId)),
+	)
+	err = redisInteractor.NotifyCompletion(ctx, newRedisClient, msg.MessageId, crawlingType)
+	notifySpan.End()
+
 	if err != nil {
 		log.Printf("Failed to notify completion: %v", err)
 		return
