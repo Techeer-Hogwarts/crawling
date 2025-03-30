@@ -37,23 +37,24 @@ func InitTracer(ctx context.Context) (*trace.TracerProvider, error) {
 
 func ExtractTraceContext(msg amqp091.Delivery) context.Context {
 	propagator := otel.GetTextMapPropagator()
-	carrier := propagation.MapCarrier{}
-	for key, value := range msg.Headers {
-		if strValue, ok := value.(string); ok {
-			carrier[key] = strValue
-		}
-	}
-	ctx := context.Background()
-	propagator.Extract(ctx, carrier)
 	// carrier := propagation.MapCarrier{}
-	// log.Printf("Headers: %v", msg.Headers)
 	// for key, value := range msg.Headers {
-	// 	log.Printf("Key: %s, Value: %v", key, value)
 	// 	if strValue, ok := value.(string); ok {
-	// 		carrier.Set(key, strValue)
-	// 		log.Printf("Set key: %s, value: %s", key, strValue)
+	// 		carrier[key] = strValue
 	// 	}
 	// }
+	ctx := context.Background()
+	// propagator.Extract(ctx, carrier)
+	carrier := propagation.MapCarrier{}
+	log.Printf("Headers: %v", msg.Headers)
+	for key, value := range msg.Headers {
+		log.Printf("Key: %s, Value: %v", key, value)
+		if strValue, ok := value.(string); ok {
+			carrier.Set(key, strValue)
+			log.Printf("Set key: %s, value: %s", key, strValue)
+		}
+	}
+	ctx = propagator.Extract(ctx, carrier)
 	log.Printf("Carrier: %v", carrier.Keys())
 	logTraceContext(ctx)
 	return ctx
