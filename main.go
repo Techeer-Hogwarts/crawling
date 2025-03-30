@@ -57,8 +57,7 @@ func main() {
 			defer wg.Done()
 			for msg := range consumedMessages {
 				msgctx := cmd.ExtractTraceContext(msg)
-				log.Printf("Trace Context: %v", msgctx)
-				log.Printf("Trace Context: %v", msgctx.Value("traceparent"))
+				logTraceContext(msgctx)
 				ctx, span := tracer.Start(msgctx, "ReceiveMessage",
 					trace.WithAttributes(attribute.String("worker_id", strconv.Itoa(workerID))))
 				log.Printf("Worker %d processing message: %s", workerID, msg.Body)
@@ -68,6 +67,17 @@ func main() {
 		}(i)
 	}
 	wg.Wait()
+}
+
+func logTraceContext(ctx context.Context) {
+	// Extract the span context from the context
+	spanContext := trace.SpanContextFromContext(ctx)
+	if spanContext.IsValid() {
+		// Log the trace ID and span ID
+		log.Printf("Trace ID: %s, Span ID: %s", spanContext.TraceID().String(), spanContext.SpanID().String())
+	} else {
+		log.Println("Invalid Span Context")
+	}
 }
 
 func processMessage(ctx context.Context, msg amqp091.Delivery, newRedisClient *redis.Client) {
