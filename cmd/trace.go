@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 
+	"github.com/Techeer-Hogwarts/crawling/config"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -11,8 +12,9 @@ import (
 )
 
 func InitTracer(ctx context.Context) (*trace.TracerProvider, error) {
+	otelEndpoint := config.GetEnv("TRACING_GRPC", "otel-collector:4317")
 	exporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure(),
-		otlptracegrpc.WithEndpoint("otel-collector:4317"),
+		otlptracegrpc.WithEndpoint(otelEndpoint),
 	)
 	if err != nil {
 		return nil, err
