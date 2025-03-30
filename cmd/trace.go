@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	oteltrace "go.opentelemetry.io/otel/trace"
 )
 
 func InitTracer(ctx context.Context) (*trace.TracerProvider, error) {
@@ -36,7 +37,6 @@ func InitTracer(ctx context.Context) (*trace.TracerProvider, error) {
 
 func ExtractTraceContext(msg amqp091.Delivery) context.Context {
 	propagator := otel.GetTextMapPropagator()
-	ctx := context.Background()
 	carrier := propagation.MapCarrier{}
 	log.Printf("Headers: %v", msg.Headers)
 	for key, value := range msg.Headers {
@@ -46,5 +46,18 @@ func ExtractTraceContext(msg amqp091.Delivery) context.Context {
 			log.Printf("Set key: %s, value: %s", key, strValue)
 		}
 	}
-	return propagator.Extract(ctx, carrier)
+	ctx := propagator.Extract(context.Background(), carrier)
+	logTraceContext(ctx)
+	return ctx
+}
+
+func logTraceContext(ctx context.Context) {
+	spanContext := oteltrace.SpanContextFromContext(ctx)
+	log.Printf("Span Context: %v", spanContext.TraceID())
+	if spanContext.IsValid() {
+		// Log the trace ID and span ID
+		log.Printf("Trace ID: %s, Span ID: %s", spanContext.TraceID().String(), spanContext.SpanID().String())
+	} else {
+		log.Println("Invalid Span Context")
+	}
 }
