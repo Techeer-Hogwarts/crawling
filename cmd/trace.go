@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"log"
 
 	"github.com/Techeer-Hogwarts/crawling/config"
 	"github.com/rabbitmq/amqp091-go"
@@ -37,6 +38,7 @@ func ExtractTraceContext(msg amqp091.Delivery) context.Context {
 	propagator := otel.GetTextMapPropagator()
 	ctx := context.Background()
 	carrier := propagation.MapCarrier{}
+	log.Printf("Headers: %v", msg.Headers)
 	for key, value := range msg.Headers {
 		if strValue, ok := value.(string); ok {
 			carrier.Set(key, strValue)
