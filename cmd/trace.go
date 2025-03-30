@@ -44,7 +44,7 @@ func ExtractTraceContext(msg amqp091.Delivery) context.Context {
 		}
 	}
 	ctx := context.Background()
-	propagator.Inject(ctx, carrier)
+	propagator.Extract(ctx, carrier)
 	// carrier := propagation.MapCarrier{}
 	// log.Printf("Headers: %v", msg.Headers)
 	// for key, value := range msg.Headers {
