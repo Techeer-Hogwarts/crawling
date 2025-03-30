@@ -56,7 +56,8 @@ func main() {
 		go func(workerID int) {
 			defer wg.Done()
 			for msg := range consumedMessages {
-				ctx, span := tracer.Start(context.Background(), "ReceiveMessage",
+				msgctx := cmd.ExtractTraceContext(msg)
+				ctx, span := tracer.Start(msgctx, "ReceiveMessage",
 					trace.WithAttributes(attribute.String("worker_id", strconv.Itoa(workerID))))
 				log.Printf("Worker %d processing message: %s", workerID, msg.Body)
 				processMessage(ctx, msg, newRedisClient)
