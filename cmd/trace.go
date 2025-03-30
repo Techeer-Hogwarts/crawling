@@ -56,6 +56,7 @@ func ExtractTraceContext(msg amqp091.Delivery) context.Context {
 	}
 	ctx = propagator.Extract(ctx, carrier)
 	log.Printf("Carrier: %v", carrier.Keys())
+	log.Printf("Carrier Trace Context: %v", carrier.Get("traceparent"))
 	logTraceContext(ctx)
 	return ctx
 }
