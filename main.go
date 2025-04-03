@@ -28,7 +28,11 @@ func main() {
 	}
 
 	defer func() {
-		_ = tracerProvider.Shutdown(ctx)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := tracerProvider.Shutdown(ctx); err != nil {
+			log.Fatalf("트레이서 종료 중 오류 발생: %v", err)
+		}
 	}()
 
 	newConnection := rabbitmq.NewConnection()
