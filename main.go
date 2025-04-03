@@ -16,6 +16,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -113,6 +114,8 @@ func processMessage(ctx context.Context, msg amqp091.Delivery, newRedisClient *r
 	err = redisInteractor.SetData(ctx, newRedisClient, msg.MessageId, blogPosts)
 	defer redisSpan.End()
 	if err != nil {
+		redisSpan.RecordError(err)
+		redisSpan.SetStatus(codes.Error, err.Error())
 		log.Printf("Failed to set data: %v", err)
 		return
 	}

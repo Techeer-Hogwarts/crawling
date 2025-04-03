@@ -28,7 +28,7 @@ func InitTracer(ctx context.Context) (*trace.TracerProvider, error) {
 		trace.WithBatcher(exporter),
 		trace.WithResource(resource.NewWithAttributes(
 			semconv.SchemaURL,
-			semconv.ServiceNameKey.String("crawler-worker"),
+			semconv.ServiceNameKey.String("go-consumer-crawler"),
 		)),
 	)
 	otel.SetTracerProvider(tp)
@@ -40,7 +40,6 @@ func ExtractTraceContext(msg amqp091.Delivery) context.Context {
 	propagator := otel.GetTextMapPropagator()
 	ctx := context.Background()
 	carrier := propagation.MapCarrier{}
-	log.Printf("Headers: %v", msg.Headers)
 	for key, value := range msg.Headers {
 		log.Printf("Key: %s, Value: %v (%T)", key, value, value)
 		switch v := value.(type) {
@@ -53,16 +52,12 @@ func ExtractTraceContext(msg amqp091.Delivery) context.Context {
 		}
 	}
 	ctx = propagator.Extract(ctx, carrier)
-	log.Printf("Carrier: %v", carrier.Keys())
-	log.Printf("Carrier Trace Context: %v", carrier.Get("traceparent"))
 	logTraceContext(ctx)
 	return ctx
 }
 
 func logTraceContext(ctx context.Context) {
 	spanContext := oteltrace.SpanContextFromContext(ctx)
-	log.Printf("Extracted Trace ID: %s", oteltrace.SpanContextFromContext(ctx).TraceID())
-	log.Printf("Extracted Span ID: %s", oteltrace.SpanContextFromContext(ctx).SpanID())
 	if spanContext.IsValid() {
 		// Log the trace ID and span ID
 		log.Printf("Trace ID: %s, Span ID: %s", spanContext.TraceID().String(), spanContext.SpanID().String())
