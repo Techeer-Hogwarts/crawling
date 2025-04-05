@@ -8,6 +8,7 @@ import (
 
 	"github.com/Techeer-Hogwarts/crawling/cmd/blogs"
 	"github.com/Techeer-Hogwarts/crawling/config"
+	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -20,6 +21,11 @@ func NewClient() (*redis.Client, error) {
 		Password: password,
 		DB:       0,
 	})
+
+	if err := redisotel.InstrumentTracing(rdb); err != nil {
+		log.Fatalf("Failed to instrument Redis: %v", err)
+	}
+
 	return rdb, nil
 }
 
